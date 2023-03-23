@@ -20,27 +20,55 @@ int main() {
 
     printf("%s\r", text);
 
+    // Get console handle
     HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO initialConsoleInfo;
-    GetConsoleScreenBufferInfo(console, &initialConsoleInfo);
-    WORD initialConsoleAttributes = initialConsoleInfo.wAttributes;
+    // Get console info
+    CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+    GetConsoleScreenBufferInfo(console, &consoleInfo);
+    // Initial console attributes
+    WORD initialConsoleAttributes = consoleInfo.wAttributes;
+    // Initial cursor info
+    CONSOLE_CURSOR_INFO cursorInfo;
+    GetConsoleCursorInfo(console, &cursorInfo);
+    cursorInfo.bVisible = FALSE;
+    SetConsoleCursorInfo(console, &cursorInfo);
+    COORD c1 = {0, 2};
 
+    // Initial time
     clock_t prevTime = clock();
-    for (int i = 0; i < len - 1; i++) {
-        char a = getch();
-        if (text[i] == a) {
-            SetConsoleTextAttribute(console, FOREGROUND_GREEN);
-        } else {
-            SetConsoleTextAttribute(console, FOREGROUND_RED);
+    int currentSymbolInd = 0;
+    int seconds = 10;
+    while (currentSymbolInd < len - 1 && seconds > 0){
+
+        if (kbhit()) {
+            char a = getch();
+            if (text[currentSymbolInd] == a) {
+                SetConsoleTextAttribute(console, FOREGROUND_GREEN);
+            } else {
+                SetConsoleTextAttribute(console, FOREGROUND_RED);
+            }
+
+            putchar(text[currentSymbolInd]);
+            currentSymbolInd++;
         }
 
-        putchar(text[i]);
+        GetConsoleScreenBufferInfo(console, &consoleInfo);
+        COORD c = consoleInfo.dwCursorPosition;
+
+        SetConsoleTextAttribute(console, initialConsoleAttributes);
+        SetConsoleCursorPosition(console, c1);
+        if ((clock() - prevTime) / CLOCKS_PER_SEC >= 1) {
+            prevTime = clock();
+            seconds--;
+        }
+        printf("%d seconds ", seconds);
+
+        SetConsoleCursorPosition(console, c);
+
     }
-    int seconds = (clock() - prevTime) / CLOCKS_PER_SEC;
 
     SetConsoleTextAttribute(console, initialConsoleAttributes);
     putchar('\n');
-    printf("%d seconds\n", seconds);
 
     system("PAUSE");
     return 0;
