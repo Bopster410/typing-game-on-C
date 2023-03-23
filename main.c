@@ -32,7 +32,9 @@ int main() {
     GetConsoleCursorInfo(console, &cursorInfo);
     cursorInfo.bVisible = FALSE;
     SetConsoleCursorInfo(console, &cursorInfo);
-    COORD c1 = {0, 2};
+
+    COORD timerCoords = consoleInfo.dwCursorPosition;
+    timerCoords.Y += 2;
 
     // Initial time
     clock_t prevTime = clock();
@@ -53,17 +55,17 @@ int main() {
         }
 
         GetConsoleScreenBufferInfo(console, &consoleInfo);
-        COORD c = consoleInfo.dwCursorPosition;
+        COORD cursorCoords = consoleInfo.dwCursorPosition;
 
         SetConsoleTextAttribute(console, initialConsoleAttributes);
-        SetConsoleCursorPosition(console, c1);
+        SetConsoleCursorPosition(console, timerCoords);
         if ((clock() - prevTime) / CLOCKS_PER_SEC >= 1) {
             prevTime = clock();
             seconds--;
         }
         printf("%d seconds ", seconds);
 
-        SetConsoleCursorPosition(console, c);
+        SetConsoleCursorPosition(console, cursorCoords);
 
     }
 
