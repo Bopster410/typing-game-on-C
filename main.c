@@ -14,17 +14,18 @@ int main() {
 
     int len;
     fscanf(textFile, "%d\n", &len);
-    char text[len];
+    char text[len + 1];
     fgets(text, len, textFile);
     fclose(textFile);
-
-    printf("%s\r", text);
 
     // Get console handle
     HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
     // Get console info
     CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
     GetConsoleScreenBufferInfo(console, &consoleInfo);
+
+    const int MAX_SYMBOLS_PER_ROW = consoleInfo.dwMaximumWindowSize.X - 5;
+
     // Initial console attributes
     WORD initialConsoleAttributes = consoleInfo.wAttributes;
     // Initial cursor info
@@ -33,8 +34,16 @@ int main() {
     cursorInfo.bVisible = FALSE;
     SetConsoleCursorInfo(console, &cursorInfo);
 
+    COORD initialCoords = consoleInfo.dwCursorPosition;
+
+    printf("%s", text);
+
+    int rowsTotal = len / MAX_SYMBOLS_PER_ROW + len % MAX_SYMBOLS_PER_ROW != 0;
     COORD timerCoords = consoleInfo.dwCursorPosition;
-    timerCoords.Y += 2;
+    timerCoords.Y += rowsTotal + 1;
+
+    SetConsoleCursorPosition(console, initialCoords);
+
 
     // Initial time
     clock_t prevTime = clock();
@@ -68,6 +77,8 @@ int main() {
         SetConsoleCursorPosition(console, cursorCoords);
 
     }
+    timerCoords.Y += 2;
+    SetConsoleCursorPosition(console, timerCoords);
 
     SetConsoleTextAttribute(console, initialConsoleAttributes);
     putchar('\n');

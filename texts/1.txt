@@ -1,2 +1,2 @@
-59
+58
 Door is currently opened, but can be closed at any moment.
