@@ -25,7 +25,7 @@ void updateTimer(const HANDLE *console, const COORD *timerCoords, int seconds) {
 }
 
 int main() {
-    FILE *textFile = fopen("../texts/1.txt", "r");
+    FILE *textFile = fopen("../texts/2.txt", "r");
     if (textFile == NULL) {
         puts("hui");
     }
@@ -59,7 +59,7 @@ int main() {
     COORD initialCoords = consoleInfo.dwCursorPosition;
 
     // Print text
-    printf("%s", text);
+    printf("%.*s", 10, text);
 
     // Get max number of symbols per row
     GetConsoleScreenBufferInfo(console, &consoleInfo);
@@ -83,6 +83,7 @@ int main() {
     updateTimer(&console, &timerCoords, seconds);
 
     // Main loop
+    int numOfSymbolsToPrint = 10;
     int correctSymbols = 0, symbolsEnteredTotal = 0, wordsEntered = 0;
     while (currentSymbolInd < len && seconds > 0) {
         // If keyboard button is pressed...
@@ -108,6 +109,16 @@ int main() {
 
             putchar(text[currentSymbolInd]);
             currentSymbolInd++;
+
+            if (currentSymbolInd % 10 == 0 && currentSymbolInd != 0) {
+                SetConsoleTextAttribute(console, initialConsoleAttributes);
+                SetConsoleCursorPosition(console, initialCoords);
+                printf("%*c\r", 10, '\b');
+//                SetConsoleCursorPosition(console, initialCoords);
+                printf("%.*s", 10, text + currentSymbolInd);
+                SetConsoleCursorPosition(console, initialCoords);
+
+            }
         }
 
         // If one whole second has gone...
@@ -122,6 +133,8 @@ int main() {
             // Rewrite timer
             updateTimer(&console, &timerCoords, seconds);
         }
+
+
 
     }
     timerCoords.Y += 2;
