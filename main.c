@@ -34,7 +34,7 @@ int main() {
     int len;
     fscanf(textFile, "%d\n", &len);
     char text[len + 1];
-    fgets(text, len, textFile);
+    fgets(text, len + 1, textFile);
     fclose(textFile);
 
     // Get console handle
@@ -75,13 +75,14 @@ int main() {
     // Initial time
     clock_t prevTime = clock();
     int currentSymbolInd = 0;
-    int seconds = 10;
+    int initialSeconds = 10, seconds = initialSeconds;
 
     // Set initial timer value
     updateTimer(&console, &timerCoords, seconds);
 
     // Main loop
-    while (currentSymbolInd < len - 1 && seconds > 0){
+    int correctSymbols = 0, symbolsEnteredTotal = 0, wordsEntered = 0;
+    while (currentSymbolInd < len - 1 && seconds > 0) {
         // If keyboard button is pressed...
         if (kbhit()) {
             // ...get this button's character
@@ -91,9 +92,16 @@ int main() {
             if (text[currentSymbolInd] == a) {
                 // ...change current symbol's color to green...
                 SetConsoleTextAttribute(console, FOREGROUND_GREEN);
+                correctSymbols++;
             } else {
                 // ...else change it to red
                 SetConsoleTextAttribute(console, FOREGROUND_RED);
+            }
+            symbolsEnteredTotal++;
+
+            char nextSym = text[currentSymbolInd + 1];
+            if (isalpha(a) && (nextSym == ' ' || nextSym == ',' || nextSym == '.')) {
+                wordsEntered++;
             }
 
             putchar(text[currentSymbolInd]);
@@ -116,6 +124,13 @@ int main() {
     }
     timerCoords.Y += 2;
     SetConsoleCursorPosition(console, timerCoords);
+
+    float neededTimeMinutes = (initialSeconds - seconds) / 60.0;
+    printf("correct symbols: %d\n", correctSymbols);
+    printf("incorrect symbols: %d\n", symbolsEnteredTotal - correctSymbols);
+    printf("symbols total: %d\n", symbolsEnteredTotal);
+    printf("symbols per minute: %.2f\n", 1.0 * symbolsEnteredTotal / neededTimeMinutes);
+    printf("words per minute: %.2f\n", 1.0 * wordsEntered / neededTimeMinutes);
 
     // Making cursor visible
     cursorInfo.bVisible = TRUE;
