@@ -44,9 +44,6 @@ int main() {
     CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
     GetConsoleScreenBufferInfo(console, &consoleInfo);
 
-    // Get max number of symbols per row
-    const int MAX_SYMBOLS_PER_ROW = consoleInfo.dwMaximumWindowSize.X - 5;
-
     // Initial console attributes
     WORD initialConsoleAttributes = consoleInfo.wAttributes;
 
@@ -64,10 +61,15 @@ int main() {
     // Print text
     printf("%s", text);
 
+    // Get max number of symbols per row
+    GetConsoleScreenBufferInfo(console, &consoleInfo);
+    const int MAX_SYMBOLS_PER_ROW = consoleInfo.dwMaximumWindowSize.X - 5;
+
     // Find proper timer coords
     int rowsTotal = len / MAX_SYMBOLS_PER_ROW + len % MAX_SYMBOLS_PER_ROW != 0;
     COORD timerCoords = consoleInfo.dwCursorPosition;
     timerCoords.Y += rowsTotal + 1;
+    timerCoords.X = 0;
 
     // Return cursor to initial coords
     SetConsoleCursorPosition(console, initialCoords);
@@ -75,14 +77,14 @@ int main() {
     // Initial time
     clock_t prevTime = clock();
     int currentSymbolInd = 0;
-    int initialSeconds = 10, seconds = initialSeconds;
+    int initialSeconds = 5, seconds = initialSeconds;
 
     // Set initial timer value
     updateTimer(&console, &timerCoords, seconds);
 
     // Main loop
     int correctSymbols = 0, symbolsEnteredTotal = 0, wordsEntered = 0;
-    while (currentSymbolInd < len - 1 && seconds > 0) {
+    while (currentSymbolInd < len && seconds > 0) {
         // If keyboard button is pressed...
         if (kbhit()) {
             // ...get this button's character
@@ -125,6 +127,8 @@ int main() {
     timerCoords.Y += 2;
     SetConsoleCursorPosition(console, timerCoords);
 
+    SetConsoleTextAttribute(console, initialConsoleAttributes);
+
     float neededTimeMinutes = (initialSeconds - seconds) / 60.0;
     printf("correct symbols: %d\n", correctSymbols);
     printf("incorrect symbols: %d\n", symbolsEnteredTotal - correctSymbols);
@@ -136,7 +140,6 @@ int main() {
     cursorInfo.bVisible = TRUE;
     SetConsoleCursorInfo(console, &cursorInfo);
 
-    SetConsoleTextAttribute(console, initialConsoleAttributes);
     putchar('\n');
 
     system("PAUSE");
