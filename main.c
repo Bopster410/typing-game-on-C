@@ -5,6 +5,16 @@
 #include <time.h>
 
 //#define DEBUG
+#define MAX_TIME_SECONDS 500
+#define MAX_ERRORS_COUNT 50
+
+typedef enum argsStatusCode {
+    CORRECT,
+    WRONG_ARGS_NUMBER,
+    WRONG_DIFFICULTY,
+    WRONG_TIME,
+    WRONG_ERRORS_COUNT
+} argsStatusCode_t;
 
 // Updates timer value
 void updateTimer(const HANDLE *console, const COORD *timerCoords, int seconds) {
@@ -24,7 +34,55 @@ void updateTimer(const HANDLE *console, const COORD *timerCoords, int seconds) {
     SetConsoleCursorPosition(*console, cursorCoords);
 }
 
-int main() {
+argsStatusCode_t checkInput(int argc, char *argv[]) {
+    if (argc != 4) {
+        return WRONG_ARGS_NUMBER;
+    }
+
+    char *difficulty = argv[1];
+    if (strcmp(difficulty, "easy") != 0 && strcmp(difficulty, "medium") != 0 && strcmp(difficulty, "hard") != 0) {
+        return WRONG_DIFFICULTY;
+    }
+
+    // inputVal - time in seconds
+    int inputVal = atoi(argv[2]);
+    if (inputVal <= 0 || inputVal > MAX_TIME_SECONDS) {
+        return WRONG_TIME;
+    }
+
+    // inputVal - errors total
+    inputVal = -1;
+    sscanf(argv[3], "%d", &inputVal);
+    if (inputVal < 0 || inputVal > MAX_ERRORS_COUNT) {
+        return WRONG_ERRORS_COUNT;
+    }
+
+    return CORRECT;
+}
+
+int main(int argc, char *argv[]) {
+    argsStatusCode_t status = checkInput(argc, argv);
+    switch(status)
+    {
+        case WRONG_ARGS_NUMBER:
+            puts("ERROR: wrong number of arguments was entered!");
+            break;
+        case WRONG_DIFFICULTY:
+            puts("ERROR: wrong difficulty was chosen! Please, enter 'easy', 'medium' or 'hard'.");
+            break;
+        case WRONG_TIME:
+            printf("ERROR: wrong time was entered! Valid time in seconds is between 0 and %d\n", MAX_TIME_SECONDS + 1);
+            break;
+        case WRONG_ERRORS_COUNT:
+            printf("ERROR: wrong errors count was entered! Valid errors number is from 0 to %d\n", MAX_ERRORS_COUNT);
+            break;
+    }
+
+    if (status != CORRECT) {
+        return status;
+    }
+
+
     FILE *textFile = fopen("../texts/2.txt", "r");
     if (textFile == NULL) {
         puts("hui");
