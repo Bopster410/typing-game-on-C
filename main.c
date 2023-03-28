@@ -110,7 +110,11 @@ int main() {
                 wordsEntered++;
             }
 
-            putchar(text[currentSymbolInd]);
+            if (text[currentSymbolInd] == ' ') {
+                putchar('_');
+            } else {
+                putchar(text[currentSymbolInd]);
+            }
             currentSymbolInd++;
 
             if (currentSymbolInd % numOfSymbolsToPrint == 0 && currentSymbolInd != 0) {
