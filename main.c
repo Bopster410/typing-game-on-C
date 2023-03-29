@@ -8,13 +8,14 @@
 #define MAX_TIME_SECONDS 500
 #define MAX_ERRORS_COUNT 50
 
-typedef enum argsStatusCode {
-    CORRECT,
+typedef enum statusCode {
+    SUCCESS,
     WRONG_ARGS_NUMBER,
     WRONG_DIFFICULTY,
     WRONG_TIME,
     WRONG_ERRORS_COUNT
-} argsStatusCode_t;
+} statusCode_t;
+
 
 // Updates timer value
 void updateTimer(const HANDLE *console, const COORD *timerCoords, int seconds) {
@@ -34,7 +35,7 @@ void updateTimer(const HANDLE *console, const COORD *timerCoords, int seconds) {
     SetConsoleCursorPosition(*console, cursorCoords);
 }
 
-argsStatusCode_t checkInput(int argc, char *argv[]) {
+statusCode_t checkInput(int argc, char *argv[]) {
     if (argc != 4) {
         return WRONG_ARGS_NUMBER;
     }
@@ -57,11 +58,11 @@ argsStatusCode_t checkInput(int argc, char *argv[]) {
         return WRONG_ERRORS_COUNT;
     }
 
-    return CORRECT;
+    return SUCCESS;
 }
 
 int main(int argc, char *argv[]) {
-    argsStatusCode_t status = checkInput(argc, argv);
+    statusCode_t status = checkInput(argc, argv);
     switch(status)
     {
         case WRONG_ARGS_NUMBER:
@@ -78,7 +79,12 @@ int main(int argc, char *argv[]) {
             break;
     }
 
-    if (status != CORRECT) {
+    if (status != SUCCESS) {
+        const char *helpMessage = "\nUsage: RK1.exe [difficulty] [time] [errors]\n"
+                                  "difficulty:\tone of 'easy', 'medium' or 'hard'\n"
+                                  "time:\t\tmaximum time in seconds to complete the game\n"
+                                  "errors:\t\tmaximum errors number\n";
+        printf("%s", helpMessage);
         return status;
     }
 
@@ -86,6 +92,7 @@ int main(int argc, char *argv[]) {
     FILE *textFile = fopen("../texts/2.txt", "r");
     if (textFile == NULL) {
         puts("hui");
+        return 1;
     }
 
     // Reading data from file
