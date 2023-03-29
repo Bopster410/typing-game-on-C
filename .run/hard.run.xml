@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="hard" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="hard 10 10" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="true" WORKING_DIR="file://$PROJECT_DIR$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RK1" TARGET_NAME="RK1" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="RK1" RUN_TARGET_NAME="RK1">
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>

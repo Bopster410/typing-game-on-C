@@ -16,7 +16,6 @@ typedef enum statusCode {
     WRONG_ERRORS_COUNT
 } statusCode_t;
 
-
 // Updates timer value
 void updateTimer(const HANDLE *console, const COORD *timerCoords, int seconds) {
     // Get current console information...
@@ -35,6 +34,7 @@ void updateTimer(const HANDLE *console, const COORD *timerCoords, int seconds) {
     SetConsoleCursorPosition(*console, cursorCoords);
 }
 
+// Validates input
 statusCode_t checkInput(int argc, char *argv[]) {
     if (argc != 4) {
         return WRONG_ARGS_NUMBER;
@@ -62,6 +62,7 @@ statusCode_t checkInput(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
+    // Checks if input data is correct
     statusCode_t status = checkInput(argc, argv);
     switch(status)
     {
@@ -79,6 +80,7 @@ int main(int argc, char *argv[]) {
             break;
     }
 
+    // If inputs is invalid, print help message and close the program
     if (status != SUCCESS) {
         const char *helpMessage = "\nUsage: RK1.exe [difficulty] [time] [errors]\n"
                                   "difficulty:\tone of 'easy', 'medium' or 'hard'\n"
@@ -88,12 +90,16 @@ int main(int argc, char *argv[]) {
         return status;
     }
 
-
-    FILE *textFile = fopen("../texts/2.txt", "r");
+    // Open file with text
+    char *fileName = malloc(sizeof(char) * 64);
+    srand(time(NULL));
+    sprintf(fileName, "texts/%s/%d.txt", argv[1], rand() % 3 + 1);
+    FILE *textFile = fopen(fileName, "r");
     if (textFile == NULL) {
         puts("hui");
         return 1;
     }
+    free(fileName);
 
     // Reading data from file
     int len;
@@ -127,9 +133,8 @@ int main(int argc, char *argv[]) {
     const int MAX_SYMBOLS_PER_ROW = consoleInfo.dwMaximumWindowSize.X;
     const int MAX_SYMBOLS_PER_PAGE = MAX_SYMBOLS_PER_ROW * 5;
 
-    // Print text
+    // Print first page of the text
     printf("%.*s", MAX_SYMBOLS_PER_PAGE, text);
-
 
     // Update console info
     GetConsoleScreenBufferInfo(console, &consoleInfo);
@@ -146,15 +151,15 @@ int main(int argc, char *argv[]) {
     // Initial time
     clock_t prevTime = clock();
     int currentSymbolInd = 0;
-    int initialSeconds = 500, seconds = initialSeconds;
+    int initialSeconds = atoi(argv[2]), seconds = initialSeconds,
+        errorsLeft = atoi(argv[3]);
 
     // Set initial timer value
     updateTimer(&console, &timerCoords, seconds);
 
     // Main loop
-    int numOfSymbolsToPrint = MAX_SYMBOLS_PER_PAGE;
     int correctSymbols = 0, wordsEntered = 0;
-    while (currentSymbolInd < len && seconds > 0) {
+    while (currentSymbolInd < len && seconds > 0 && errorsLeft > 0) {
         // If keyboard button is pressed...
         if (kbhit()) {
             // ...get this button's character
@@ -168,6 +173,7 @@ int main(int argc, char *argv[]) {
             } else {
                 // ...else change it to red
                 SetConsoleTextAttribute(console, FOREGROUND_RED);
+                errorsLeft--;
             }
 
             char nextSym = text[currentSymbolInd + 1];
@@ -182,7 +188,7 @@ int main(int argc, char *argv[]) {
             }
             currentSymbolInd++;
 
-            if (currentSymbolInd % numOfSymbolsToPrint == 0 && currentSymbolInd != 0) {
+            if (currentSymbolInd % MAX_SYMBOLS_PER_PAGE == 0 && currentSymbolInd != 0) {
                 SetConsoleTextAttribute(console, initialConsoleAttributes);
 #ifdef DEBUG
                 CONSOLE_SCREEN_BUFFER_INFO csbi;
@@ -192,7 +198,7 @@ int main(int argc, char *argv[]) {
 #ifdef DEBUG
                 GetConsoleScreenBufferInfo(console, &csbi);
 #endif
-                printf("%*c", numOfSymbolsToPrint, ' ');
+                printf("%*c", MAX_SYMBOLS_PER_PAGE, ' ');
 #ifdef DEBUG
                 GetConsoleScreenBufferInfo(console, &csbi);
 #endif
@@ -200,7 +206,7 @@ int main(int argc, char *argv[]) {
 #ifdef DEBUG
                 GetConsoleScreenBufferInfo(console, &csbi);
 #endif
-                printf("%.*s", numOfSymbolsToPrint, text + currentSymbolInd);
+                printf("%.*s", MAX_SYMBOLS_PER_PAGE, text + currentSymbolInd);
 #ifdef DEBUG
                 GetConsoleScreenBufferInfo(console, &csbi);
 #endif
@@ -224,10 +230,9 @@ int main(int argc, char *argv[]) {
             // Rewrite timer
             updateTimer(&console, &timerCoords, seconds);
         }
-
-
-
     }
+
+    // Moving 2 rows down from timer position to print player's statistics
     timerCoords.Y += 2;
     SetConsoleCursorPosition(console, timerCoords);
 

@@ -1,0 +1,2 @@
+193
+this is a simple text game. you will have to guess the text from these words and then send us the answer. the winning answer will be the one which will be closest to the actual text. good luck.

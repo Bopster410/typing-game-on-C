@@ -1,0 +1,2 @@
+97
+Door is currently opened, but can be closed at any moment. You are the only person who can do it.
