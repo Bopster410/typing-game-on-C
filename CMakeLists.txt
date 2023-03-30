@@ -3,4 +3,4 @@ project(RK1 C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(RK1 main.c)
+add_executable(RK1 main.c typgame.h typgame.c)

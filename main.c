@@ -3,63 +3,7 @@
 #include <conio.h>
 #include <windows.h>
 #include <time.h>
-
-//#define DEBUG
-#define MAX_TIME_SECONDS 500
-#define MAX_ERRORS_COUNT 50
-
-typedef enum statusCode {
-    SUCCESS,
-    WRONG_ARGS_NUMBER,
-    WRONG_DIFFICULTY,
-    WRONG_TIME,
-    WRONG_ERRORS_COUNT
-} statusCode_t;
-
-// Updates timer value
-void updateTimer(const HANDLE *console, const COORD *timerCoords, int seconds) {
-    // Get current console information...
-    CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
-    GetConsoleScreenBufferInfo(*console, &consoleInfo);
-    // ...and extract cursor's coords from it
-    COORD cursorCoords = consoleInfo.dwCursorPosition;
-
-    // Move cursor to timer position
-    SetConsoleCursorPosition(*console, *timerCoords);
-
-    // Print new time
-    printf("%d seconds ", seconds);
-
-    // Return cursor to it's initial coords
-    SetConsoleCursorPosition(*console, cursorCoords);
-}
-
-// Validates input
-statusCode_t checkInput(int argc, char *argv[]) {
-    if (argc != 4) {
-        return WRONG_ARGS_NUMBER;
-    }
-
-    char *difficulty = argv[1];
-    if (strcmp(difficulty, "easy") != 0 && strcmp(difficulty, "medium") != 0 && strcmp(difficulty, "hard") != 0) {
-        return WRONG_DIFFICULTY;
-    }
-
-    // inputVal - time in seconds
-    int inputVal = atoi(argv[2]);
-    if (inputVal <= 0 || inputVal > MAX_TIME_SECONDS) {
-        return WRONG_TIME;
-    }
-
-    // inputVal - errors total
-    inputVal = -1;
-    sscanf(argv[3], "%d", &inputVal);
-    if (inputVal < 0 || inputVal > MAX_ERRORS_COUNT) {
-        return WRONG_ERRORS_COUNT;
-    }
-
-    return SUCCESS;
-}
+#include "typgame.h"
 
 int main(int argc, char *argv[]) {
     // Checks if input data is correct
@@ -87,26 +31,32 @@ int main(int argc, char *argv[]) {
                                   "time:\t\tmaximum time in seconds to complete the game\n"
                                   "errors:\t\tmaximum errors number\n";
         printf("%s", helpMessage);
-        return status;
+        exit(status);
     }
 
     // Open file with text
-    char *fileName = malloc(sizeof(char) * 64);
+    char *fileName = malloc(sizeof(char) * 32);
+    // Random text file is chosen
     srand(time(NULL));
     sprintf(fileName, "texts/%s/%d.txt", argv[1], rand() % 3 + 1);
     FILE *textFile = fopen(fileName, "r");
-    if (textFile == NULL) {
-        puts("hui");
-        return 1;
-    }
     free(fileName);
+    if (textFile == NULL) {
+        puts("ERROR: something went wrong while opening the file!");
+        exit(OPENING_FILE_ERROR);
+    }
 
     // Reading data from file
-    int len;
+    unsigned int len = 0;
     fscanf(textFile, "%d\n", &len);
-    char text[len + 1];
+    char *text = malloc(len + 1);
     fgets(text, len + 1, textFile);
     fclose(textFile);
+
+    if (len == 0 || strlen(text) == 0) {
+        puts("ERROR: wrong input file format");
+        exit(FILE_FORMAT_ERROR);
+    }
 
     // Get console handle
     HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -118,6 +68,9 @@ int main(int argc, char *argv[]) {
     // Initial console attributes
     WORD initialConsoleAttributes = consoleInfo.wAttributes;
 
+    // Get initial cursor coords
+    COORD initialCoords = consoleInfo.dwCursorPosition;
+
     // Initial cursor info
     CONSOLE_CURSOR_INFO cursorInfo;
     GetConsoleCursorInfo(console, &cursorInfo);
@@ -125,9 +78,6 @@ int main(int argc, char *argv[]) {
     // Making cursor invisible
     cursorInfo.bVisible = FALSE;
     SetConsoleCursorInfo(console, &cursorInfo);
-
-    // Get initial cursor coords
-    COORD initialCoords = consoleInfo.dwCursorPosition;
 
     // Get max number of symbols per row and per page
     const int MAX_SYMBOLS_PER_ROW = consoleInfo.dwMaximumWindowSize.X;
@@ -150,8 +100,8 @@ int main(int argc, char *argv[]) {
 
     // Initial time
     clock_t prevTime = clock();
-    int currentSymbolInd = 0;
-    int initialSeconds = atoi(argv[2]), seconds = initialSeconds,
+    unsigned int currentSymbolInd = 0;
+    unsigned int initialSeconds = atoi(argv[2]), seconds = initialSeconds,
         errorsLeft = atoi(argv[3]);
 
     // Set initial timer value
@@ -163,66 +113,47 @@ int main(int argc, char *argv[]) {
         // If keyboard button is pressed...
         if (kbhit()) {
             // ...get this button's character
-            char a = getch();
+            char a = getch(), currentSymbol = text[currentSymbolInd];
 
             // If it's the right one...
-            if (text[currentSymbolInd] == a) {
+            if (currentSymbol == a) {
                 // ...change current symbol's color to green...
-                SetConsoleTextAttribute(console, FOREGROUND_GREEN);
+                SetConsoleTextAttribute(console, BACKGROUND_GREEN);
                 correctSymbols++;
             } else {
                 // ...else change it to red
-                SetConsoleTextAttribute(console, FOREGROUND_RED);
+                SetConsoleTextAttribute(console, BACKGROUND_RED);
                 errorsLeft--;
             }
 
+            // If next symbol is a valid word delimiter, increase word's counter by 1
             char nextSym = text[currentSymbolInd + 1];
-            if (isalpha(a) && (nextSym == ' ' || nextSym == ',' || nextSym == '.')) {
+            if (isalpha(currentSymbol) && isWordsDelimiter(nextSym)) {
                 wordsEntered++;
             }
 
-            if (text[currentSymbolInd] == ' ') {
-                putchar('_');
-            } else {
-                putchar(text[currentSymbolInd]);
-            }
+            // Print current symbol with certain background
+            // (depends on whether user's input is right or not)
+            putchar(currentSymbol);
+
+            // Increase current symbol's index
             currentSymbolInd++;
 
-            if (currentSymbolInd % MAX_SYMBOLS_PER_PAGE == 0 && currentSymbolInd != 0) {
-                SetConsoleTextAttribute(console, initialConsoleAttributes);
-#ifdef DEBUG
-                CONSOLE_SCREEN_BUFFER_INFO csbi;
-                GetConsoleScreenBufferInfo(console, &csbi);
-#endif
-                SetConsoleCursorPosition(console, initialCoords);
-#ifdef DEBUG
-                GetConsoleScreenBufferInfo(console, &csbi);
-#endif
-                printf("%*c", MAX_SYMBOLS_PER_PAGE, ' ');
-#ifdef DEBUG
-                GetConsoleScreenBufferInfo(console, &csbi);
-#endif
-                SetConsoleCursorPosition(console, initialCoords);
-#ifdef DEBUG
-                GetConsoleScreenBufferInfo(console, &csbi);
-#endif
-                printf("%.*s", MAX_SYMBOLS_PER_PAGE, text + currentSymbolInd);
-#ifdef DEBUG
-                GetConsoleScreenBufferInfo(console, &csbi);
-#endif
-                SetConsoleCursorPosition(console, initialCoords);
-#ifdef DEBUG
-                GetConsoleScreenBufferInfo(console, &csbi);
-#endif
+            // Set console attributes to default
+            SetConsoleTextAttribute(console, initialConsoleAttributes);
 
+            // If current page is over, print the next one
+            if (currentSymbolInd % MAX_SYMBOLS_PER_PAGE == 0 && currentSymbolInd != 0) {
+                SetConsoleCursorPosition(console, initialCoords);
+                printf("%*c", MAX_SYMBOLS_PER_PAGE, ' ');
+                SetConsoleCursorPosition(console, initialCoords);
+                printf("%.*s", MAX_SYMBOLS_PER_PAGE, text + currentSymbolInd);
+                SetConsoleCursorPosition(console, initialCoords);
             }
         }
 
         // If one whole second has gone...
         if ((clock() - prevTime) / CLOCKS_PER_SEC >= 1) {
-            // Set console attributes to default
-            SetConsoleTextAttribute(console, initialConsoleAttributes);
-
             // Update number of seconds left
             prevTime = clock();
             seconds--;
@@ -232,18 +163,22 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    free(text);
+
     // Moving 2 rows down from timer position to print player's statistics
     timerCoords.Y += 2;
     SetConsoleCursorPosition(console, timerCoords);
 
+    // Set default console attributes
     SetConsoleTextAttribute(console, initialConsoleAttributes);
 
+    // Print the statistics
     float neededTimeMinutes = (initialSeconds - seconds) / 60.0;
-    printf("correct symbols: %d\n", correctSymbols);
-    printf("incorrect symbols: %d\n", currentSymbolInd - correctSymbols);
-    printf("symbols total: %d\n", currentSymbolInd);
-    printf("symbols per minute: %.2f\n", 1.0 * currentSymbolInd / neededTimeMinutes);
-    printf("words per minute: %.2f\n", 1.0 * wordsEntered / neededTimeMinutes);
+    printf("correct symbols:\t%d\n", correctSymbols);
+    printf("incorrect symbols:\t%d\n", currentSymbolInd - correctSymbols);
+    printf("symbols total:\t\t%d\n", currentSymbolInd);
+    printf("symbols per minute:\t%.2f\n", 1.0 * currentSymbolInd / neededTimeMinutes);
+    printf("words per minute:\t%.2f\n", 1.0 * wordsEntered / neededTimeMinutes);
 
     // Making cursor visible
     cursorInfo.bVisible = TRUE;
